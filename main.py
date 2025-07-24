@@ -107,8 +107,12 @@ async def answer_handler(callback: types.CallbackQuery):
 
     current_question_index = await get_quiz_index(callback.from_user.id)
     correct_option = quiz_data[current_question_index]['correct_option']
-    # Получаем индекс выбранного варианта из callback_data
+    options = quiz_data[current_question_index]['options']
     selected_idx = int(callback.data.split('_')[1])
+    selected_text = options[selected_idx]
+
+    # Сообщаем пользователю, что он выбрал
+    await callback.message.answer(f"Вы выбрали: {selected_text}")
 
     if selected_idx == correct_option:
         await callback.message.answer("Верно!")
