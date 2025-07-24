@@ -8,5 +8,5 @@ services:
     environment:
       - API_TOKEN_TG=${API_TOKEN_TG}
     volumes:
-      - ./data/quiz_bot.db:/app/data/quiz_bot.db
+      - ./data:/app/data
     command: ["python", "main.py"]
