@@ -97,6 +97,37 @@ def generate_options_keyboard(answer_options):
     return builder.as_markup()
 
 
+# Добавим новую таблицу для хранения результатов
+async def create_results_table():
+    async with aiosqlite.connect(DB_NAME) as db:
+        await db.execute('''CREATE TABLE IF NOT EXISTS quiz_results (
+            user_id INTEGER PRIMARY KEY,
+            username TEXT,
+            correct_answers INTEGER
+        )''')
+        await db.commit()
+
+# Сохраняем результат пользователя
+async def save_quiz_result(user_id, username, correct_answers):
+    async with aiosqlite.connect(DB_NAME) as db:
+        await db.execute('INSERT OR REPLACE INTO quiz_results (user_id, username, correct_answers) VALUES (?, ?, ?)',
+                         (user_id, username, correct_answers))
+        await db.commit()
+
+# Получаем статистику всех пользователей
+async def get_all_results():
+    async with aiosqlite.connect(DB_NAME) as db:
+        async with db.execute('SELECT username, correct_answers FROM quiz_results ORDER BY correct_answers DESC') as cursor:
+            return await cursor.fetchall()
+
+# Получаем результат конкретного пользователя
+async def get_user_result(user_id):
+    async with aiosqlite.connect(DB_NAME) as db:
+        async with db.execute('SELECT correct_answers FROM quiz_results WHERE user_id = ?', (user_id,)) as cursor:
+            row = await cursor.fetchone()
+            return row[0] if row else None
+
+# Модифицируем answer_handler для подсчёта правильных ответов
 @dp.callback_query(F.data.startswith("answer_"))
 async def answer_handler(callback: types.CallbackQuery):
     await callback.bot.edit_message_reply_markup(
@@ -105,28 +136,53 @@ async def answer_handler(callback: types.CallbackQuery):
         reply_markup=None
     )
 
-    current_question_index = await get_quiz_index(callback.from_user.id)
+    user_id = callback.from_user.id
+    # Получаем имя пользователя для статистики
+    username = callback.from_user.username
+    full_name = callback.from_user.full_name
+    # Проверяем username на читаемость
+    def is_readable(name):
+        return bool(name and name.strip() and name.lower() != 'none')
+    if is_readable(full_name):
+        display_name = full_name
+    else:
+        display_name = 'Неизвестный'
+    # Формируем маскированный никнейм
+    if is_readable(username):
+        if len(username) > 3:
+            masked = username[:3] + '*' * (len(username) - 3)
+        else:
+            masked = username
+        display_name = f"{display_name} ({masked})"
+
+    current_question_index = await get_quiz_index(user_id)
     correct_option = quiz_data[current_question_index]['correct_option']
     options = quiz_data[current_question_index]['options']
     selected_idx = int(callback.data.split('_')[1])
     selected_text = options[selected_idx]
 
-    # Сообщаем пользователю, что он выбрал
+    # Сохраняем количество правильных ответов в state (через базу)
+    correct_count = await get_user_result(user_id) or 0
+    if current_question_index == 0:
+        correct_count = 0  # сбрасываем при новом квизе
+
     await callback.message.answer(f"Вы выбрали: {selected_text}")
 
     if selected_idx == correct_option:
         await callback.message.answer("Верно!")
+        correct_count += 1
     else:
-        await callback.message.answer(f"Неправильно. Правильный ответ: {quiz_data[current_question_index]['options'][correct_option]}")
+        await callback.message.answer(f"Неправильно. Правильный ответ: {options[correct_option]}")
 
-    # Обновление номера текущего вопроса в базе данных
     current_question_index += 1
-    await update_quiz_index(callback.from_user.id, current_question_index)
+    await update_quiz_index(user_id, current_question_index)
 
     if current_question_index < len(quiz_data):
-        await get_question(callback.message, callback.from_user.id)
+        await save_quiz_result(user_id, display_name, correct_count)
+        await get_question(callback.message, user_id)
     else:
-        await callback.message.answer("Это был последний вопрос. Квиз завершен!")
+        await save_quiz_result(user_id, display_name, correct_count)
+        await callback.message.answer(f"Это был последний вопрос. Квиз завершен!\nВаш результат: {correct_count} из {len(quiz_data)}")
 
 
 # Хэндлер на команду /start
@@ -134,7 +190,14 @@ async def answer_handler(callback: types.CallbackQuery):
 async def cmd_start(message: types.Message):
     builder = ReplyKeyboardBuilder()
     builder.add(types.KeyboardButton(text="Начать игру"))
-    await message.answer("Добро пожаловать в квиз!", reply_markup=builder.as_markup(resize_keyboard=True))
+    builder.add(types.KeyboardButton(text="Статистика"))
+    await message.answer("Добро пожаловать в квиз!",
+                         reply_markup=builder.as_markup(resize_keyboard=True))
+
+# Обработка нажатия на кнопку 'Статистика'
+@dp.message(F.text == "Статистика")
+async def stats_button_handler(message: types.Message):
+    await cmd_stats(message)
 
 
 async def get_question(message, user_id):
@@ -183,6 +246,18 @@ async def cmd_quiz(message: types.Message):
     await new_quiz(message)
 
 
+# Команда для вывода статистики
+@dp.message(Command("stats"))
+async def cmd_stats(message: types.Message):
+    results = await get_all_results()
+    if not results:
+        await message.answer("Статистика пока пуста.")
+        return
+    text = "Статистика игроков (последний результат):\n"
+    for idx, (username, correct) in enumerate(results, 1):
+        text += f"{idx}. {username}: {correct}\n"
+    await message.answer(text)
+
 
 async def create_table():
     # Создаем соединение с базой данных (если она не существует, она будет создана)
@@ -199,6 +274,7 @@ async def main():
 
     # Запускаем создание таблицы базы данных
     await create_table()
+    await create_results_table()
 
     await dp.start_polling(bot)
 
