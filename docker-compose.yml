@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  aiogram-bot:
+    build: .
+    container_name: aiogram-bot
+    restart: always
+    environment:
+      - API_TOKEN_TG=${API_TOKEN_TG}
+    volumes:
+      - ./data/quiz_bot.db:/app/data/quiz_bot.db
+    command: ["python", "main.py"]

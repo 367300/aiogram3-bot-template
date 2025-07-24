@@ -210,3 +210,4 @@ __marimo__/
 .vscode
 
 quiz_bot.db
+data/*
