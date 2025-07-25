@@ -1,8 +1,7 @@
 from aiogram import types, F
 from aiogram.filters.command import Command
-from src.quiz_data import quiz_data
 from src.keyboards import generate_options_keyboard
-from src.database import get_quiz_index, update_quiz_index, get_user_result, save_quiz_result
+from src.database import get_quiz_index, update_quiz_index, get_user_result, save_quiz_result, get_question_by_id, get_questions_count
 from aiogram import Router
 
 router = Router()
@@ -12,9 +11,13 @@ def is_readable(name):
 
 async def get_question(message, user_id):
     current_question_index = await get_quiz_index(user_id)
-    opts = quiz_data[current_question_index]['options']
+    question_data = await get_question_by_id(current_question_index)
+    if not question_data:
+        await message.answer("Вопрос не найден.")
+        return
+    opts = question_data['options']
     kb = generate_options_keyboard(opts)
-    await message.answer(f"{quiz_data[current_question_index]['question']}", reply_markup=kb)
+    await message.answer(f"{question_data['question']}", reply_markup=kb)
 
 async def new_quiz(message):
     user_id = message.from_user.id
@@ -38,19 +41,17 @@ async def answer_handler(callback: types.CallbackQuery):
     user_id = callback.from_user.id
     username = callback.from_user.username
     full_name = callback.from_user.full_name
-    if is_readable(full_name):
-        display_name = full_name
-    else:
-        display_name = 'Неизвестный'
+    display_name = full_name if is_readable(full_name) else 'Неизвестный'
     if is_readable(username):
-        if len(username) > 3:
-            masked = username[:3] + '*' * (len(username) - 3)
-        else:
-            masked = username
+        masked = username[:3] + '*' * (len(username) - 3) if len(username) > 3 else username
         display_name = f"{display_name} ({masked})"
     current_question_index = await get_quiz_index(user_id)
-    correct_option = quiz_data[current_question_index]['correct_option']
-    options = quiz_data[current_question_index]['options']
+    question_data = await get_question_by_id(current_question_index)
+    if not question_data:
+        await callback.message.answer("Вопрос не найден.")
+        return
+    correct_option = question_data['correct_option']
+    options = question_data['options']
     selected_idx = int(callback.data.split('_')[1])
     selected_text = options[selected_idx]
     correct_count = await get_user_result(user_id) or 0
@@ -64,9 +65,10 @@ async def answer_handler(callback: types.CallbackQuery):
         await callback.message.answer(f"Неправильно. Правильный ответ: {options[correct_option]}")
     current_question_index += 1
     await update_quiz_index(user_id, current_question_index)
-    if current_question_index < len(quiz_data):
+    total_questions = await get_questions_count()
+    if current_question_index < total_questions:
         await save_quiz_result(user_id, display_name, correct_count)
         await get_question(callback.message, user_id)
     else:
         await save_quiz_result(user_id, display_name, correct_count)
-        await callback.message.answer(f"Это был последний вопрос. Квиз завершен!\nВаш результат: {correct_count} из {len(quiz_data)}")
+        await callback.message.answer(f"Это был последний вопрос. Квиз завершен!\nВаш результат: {correct_count} из {total_questions}")

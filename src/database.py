@@ -101,3 +101,45 @@ async def get_user_result(user_id):
     if len(results) == 0:
         return None
     return results[0]["correct_answers"]
+
+async def get_question_by_id(qid):
+    query = '''
+    DECLARE $id AS Uint64;
+    SELECT question, options, correct_option FROM quiz_questions WHERE id = $id;
+    '''
+    results = execute_select_query(pool, query, id=qid)
+    if not results:
+        return None
+    row = results[0]
+    # Преобразуем строку вариантов в список
+    options = row["options"].split("|")
+    return {
+        "question": row["question"],
+        "options": options,
+        "correct_option": row["correct_option"]
+    }
+
+async def get_questions_count():
+    query = 'SELECT COUNT(*) as cnt FROM quiz_questions;'
+    results = execute_select_query(pool, query)
+    return results[0]['cnt'] if results else 0
+
+async def get_quiz_state(user_id):
+    query = '''
+    DECLARE $user_id AS Uint64;
+    SELECT question_index, score FROM quiz_state WHERE user_id == $user_id;
+    '''
+    results = execute_select_query(pool, query, user_id=user_id)
+    if len(results) == 0:
+        return 0, 0
+    row = results[0]
+    return row.get("question_index", 0), row.get("score", 0)
+
+async def update_quiz_state(user_id, index, score):
+    query = '''
+    DECLARE $user_id AS Uint64;
+    DECLARE $question_index AS Uint64;
+    DECLARE $score AS Uint64;
+    UPSERT INTO quiz_state (user_id, question_index, score) VALUES ($user_id, $question_index, $score);
+    '''
+    execute_update_query(pool, query, user_id=user_id, question_index=index, score=score)

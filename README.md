@@ -21,27 +21,51 @@
 ## Быстрый старт (Yandex Cloud)
 
 1. **Создайте таблицы в YDB вручную (например, через YDB Console):**
+
    ```sql
+   -- Таблица состояния пользователя (индекс вопроса и текущие очки)
    CREATE TABLE `quiz_state` (
        user_id Uint64,
        question_index Uint64,
        PRIMARY KEY (`user_id`)
    );
 
+   -- Таблица результатов квиза
    CREATE TABLE `quiz_results` (
        user_id Uint64,
        username Utf8,
        correct_answers Uint64,
        PRIMARY KEY (`user_id`)
    );
+
+   -- Таблица вопросов квиза
+   CREATE TABLE `quiz_questions` (
+       id Uint64,
+       question Utf8,
+       options Utf8,           -- варианты ответа через | (вертикальная черта)
+       correct_option Uint64,
+       PRIMARY KEY (id)
+   );
    ```
 
-2. **Настройте переменные окружения для функции:**
+2. **Пример заполнения таблицы вопросов:**
+
+   ```sql
+   UPSERT INTO quiz_questions (id, question, options, correct_option) VALUES
+   (0, "Что такое Python?", "Язык программирования|Тип данных|Музыкальный инструмент|Змея на английском", 0);
+
+   UPSERT INTO quiz_questions (id, question, options, correct_option) VALUES
+   (1, "Какой тип данных используется для хранения целых чисел?", "int|float|str|natural", 0);
+   ```
+
+   > Варианты ответа перечисляются через символ | (вертикальная черта), индексация с нуля.
+
+3. **Настройте переменные окружения для функции:**
    - `API_TOKEN_TG` — токен Telegram-бота
    - `YDB_ENDPOINT` — endpoint вашей YDB (например, `grpcs://ydb.serverless.yandexcloud.net:2135`)
    - `YDB_DATABASE` — путь к базе (например, `/ru-central1/b1g.../etn...`)
 
-3. **Задеплойте проект как Yandex Cloud Function:**
+4. **Задеплойте проект как Yandex Cloud Function:**
    - В качестве точки входа используйте файл `tb_webhook.py` и функцию `webhook`.
    - Укажите необходимые переменные окружения.
    - Настройте webhook Telegram на URL вашей функции.
