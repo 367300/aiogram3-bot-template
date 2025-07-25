@@ -6,7 +6,7 @@ RUN mkdir -p /app/data
 
 COPY ./src ./src
 COPY ./main.py ./main.py
-COPY ./requarement.txt ./requirements.txt
+COPY ./requirements.txt ./requirements.txt
 
 RUN pip install --no-cache-dir -r requirements.txt
 
