@@ -3,6 +3,7 @@ from aiogram.filters.command import Command
 from src.keyboards import generate_options_keyboard
 from src.database import get_quiz_index, update_quiz_index, get_user_result, save_quiz_result, get_question_by_id, get_questions_count
 from aiogram import Router
+from aiogram.exceptions import TelegramBadRequest, TelegramNetworkError
 
 router = Router()
 
@@ -22,6 +23,18 @@ async def get_question(message, user_id):
 async def new_quiz(message):
     user_id = message.from_user.id
     current_question_index = 0
+
+    # Сначала пробуем отправить картинку по ссылке
+    image_url = "https://storage.yandexcloud.net/telegram-bot-aiogram/3704bcfd-fb30-4627-8641-66cf48ce8f23.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=YCAJEnX8GFFhSnCMaZw1xWQ76%2F20250725%2Fru-central1%2Fs3%2Faws4_request&X-Amz-Date=20250725T192649Z&X-Amz-Expires=2592000&X-Amz-Signature=d5ea496464f4f744f68baa1f4a45eec65ac42bb1f023dfd44713dc51ba820733&X-Amz-SignedHeaders=host"
+    local_path = "img/3704bcfd-fb30-4627-8641-66cf48ce8f23.jpg"
+
+    try:
+        await message.answer_photo(image_url, caption="Добро пожаловать в квиз!")
+    except (TelegramBadRequest, TelegramNetworkError):
+        # Если не удалось — отправляем локальный файл
+        with open(local_path, "rb") as photo:
+            await message.answer_photo(photo, caption="Добро пожаловать в квиз!")
+
     await update_quiz_index(user_id, current_question_index)
     await get_question(message, user_id)
 
