@@ -2,8 +2,9 @@ import logging
 import asyncio
 from aiogram import Bot, Dispatcher
 from src.config import API_TOKEN
-from src.handlers import start, quiz, stats
-from src.database import create_table, create_results_table
+from src.handlers import start, ai_handler
+from src.database import create_table
+from src.knowledge_base import initialize_knowledge_base
 
 logging.basicConfig(level=logging.INFO)
 
@@ -12,12 +13,11 @@ dp = Dispatcher()
 
 def setup_routers():
     dp.include_router(start.router)
-    dp.include_router(quiz.router)
-    dp.include_router(stats.router)
+    dp.include_router(ai_handler.router)
 
 async def main():
     await create_table()
-    await create_results_table()
+    await initialize_knowledge_base()
     setup_routers()
     await dp.start_polling(bot)
 
