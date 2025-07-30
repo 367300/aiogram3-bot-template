@@ -1,14 +1,14 @@
 import logging
 import asyncio
 from aiogram import Bot, Dispatcher
-from src.config import API_TOKEN
+from src.config import TELEGRAM_BOT_TOKEN
 from src.handlers import start, ai_handler
 from src.database import create_table
 from src.knowledge_base import initialize_knowledge_base
 
 logging.basicConfig(level=logging.INFO)
 
-bot = Bot(token=API_TOKEN)
+bot = Bot(token=TELEGRAM_BOT_TOKEN)
 dp = Dispatcher()
 
 def setup_routers():
