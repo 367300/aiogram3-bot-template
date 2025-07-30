@@ -33,12 +33,16 @@ class VPNManager:
                 time.sleep(2)
                 
                 # Запускаем OpenVPN с правильными параметрами для маршрутизации
-                self.vpn_process = subprocess.Popen([
-                    'sudo', 'openvpn', 
-                    '--config', self.ovpn_config_path,
-                    '--daemon',
-                    '--log', '/tmp/openvpn.log'  # Логи для отладки
-                ])
+                # В Docker контейнере не нужен sudo
+                openvpn_cmd = ['openvpn', '--config', self.ovpn_config_path, '--daemon', '--log', '/tmp/openvpn.log']
+                
+                # Проверяем, находимся ли мы в Docker контейнере
+                if os.path.exists('/.dockerenv'):
+                    # В Docker контейнере запускаем без sudo
+                    self.vpn_process = subprocess.Popen(openvpn_cmd)
+                else:
+                    # В обычной системе используем sudo
+                    self.vpn_process = subprocess.Popen(['sudo'] + openvpn_cmd)
                 
                 # Ждем подключения
                 print("⏳ Ожидание подключения VPN...")
@@ -48,8 +52,14 @@ class VPNManager:
                 if self.vpn_process.poll() is None:
                     # Проверяем логи на успешное подключение
                     try:
-                        result = subprocess.run(['sudo', 'cat', '/tmp/openvpn.log'], 
-                                              capture_output=True, text=True)
+                        # В Docker контейнере не нужен sudo
+                        if os.path.exists('/.dockerenv'):
+                            result = subprocess.run(['cat', '/tmp/openvpn.log'], 
+                                                  capture_output=True, text=True)
+                        else:
+                            result = subprocess.run(['sudo', 'cat', '/tmp/openvpn.log'], 
+                                                  capture_output=True, text=True)
+                        
                         if result.returncode == 0:
                             log_content = result.stdout
                             if 'Initialization Sequence Completed' in log_content:
@@ -128,8 +138,12 @@ class VPNManager:
                 print("🛑 Остановка VPN...")
                 
                 # Находим и убиваем процесс OpenVPN
-                subprocess.run(['sudo', 'pkill', 'openvpn'], 
-                            capture_output=True, text=True)
+                if os.path.exists('/.dockerenv'):
+                    subprocess.run(['pkill', 'openvpn'], 
+                                capture_output=True, text=True)
+                else:
+                    subprocess.run(['sudo', 'pkill', 'openvpn'], 
+                                capture_output=True, text=True)
                 
                 if self.vpn_process:
                     self.vpn_process.terminate()
