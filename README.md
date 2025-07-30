@@ -53,6 +53,40 @@ project_root/
 - `file_path` — путь к файлу (PRIMARY KEY)
 - `file_hash` — MD5-хеш файла для отслеживания изменений
 
+## 📚 Получение базы знаний
+
+База знаний `embeddings.sqlite3` была создана с помощью универсального генератора эмбеддингов из репозитория [django-base-docker](https://github.com/367300/django-base-docker).
+
+### Варианты получения базы знаний:
+
+1. **Автоматическое скачивание** - используйте скрипт для скачивания готовой базы знаний:
+   ```bash
+   python download_knowledge_base.py
+   ```
+
+2. **Готовая база знаний** - скачайте файл `embeddings.sqlite3` из ветки [ml_service](https://github.com/367300/django-base-docker/tree/ml_service) и поместите его в папку `data/quiz_bot.db/`
+
+3. **Создание собственной базы знаний** - используйте генератор эмбеддингов из репозитория [django-base-docker](https://github.com/367300/django-base-docker):
+   - Подробная документация: [EMBEDDINGS_GENERATOR.md](https://github.com/367300/django-base-docker/blob/ml_service/EMBEDDINGS_GENERATOR.md)
+   - Скрипт поддерживает парсинг Python файлов, обработку документации, умное обновление и интеграцию с OpenAI API
+
+### Быстрый старт для создания базы знаний:
+
+```bash
+# Клонируйте репозиторий с генератором
+git clone https://github.com/367300/django-base-docker.git
+cd django-base-docker
+
+# Установите зависимости
+pip install -r requirements.txt
+
+# Создайте .env с OPENAI_API_KEY
+echo "OPENAI_API_KEY=your_key_here" > .env
+
+# Запустите генерацию эмбеддингов
+python generate_embeddings.py
+```
+
 ## 🛠️ Установка и настройка
 
 ### 1. Клонирование репозитория
@@ -87,8 +121,16 @@ OPENAI_API_KEY=your_openai_api_key_here
 3. Создайте новый ключ
 4. Скопируйте ключ
 
-### 5. Проверка базы знаний
-Убедитесь, что файл `data/quiz_bot.db/embeddings.sqlite3` существует и содержит данные.
+### 5. Получение базы знаний
+Выберите один из способов:
+
+**Автоматическое скачивание:**
+```bash
+python download_knowledge_base.py
+```
+
+**Ручное скачивание:**
+Скачайте файл `embeddings.sqlite3` из репозитория [django-base-docker](https://github.com/367300/django-base-docker/tree/ml_service) и поместите его в папку `data/quiz_bot.db/`
 
 ### 6. Запуск бота
 ```bash
