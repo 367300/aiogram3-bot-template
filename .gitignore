@@ -211,3 +211,6 @@ __marimo__/
 
 quiz_bot.db
 data/*
+
+*.ovpn
+auth.txt

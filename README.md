@@ -105,7 +105,17 @@ pip install -r requirements.txt
 ```env
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 OPENAI_API_KEY=your_openai_api_key_here
+
+# Прокси для OpenAI (опционально)
+OPENAI_PROXY_URL=http://proxy-server:port
+OPENAI_PROXY_USERNAME=username  # если требуется аутентификация
+OPENAI_PROXY_PASSWORD=password  # если требуется аутентификация
+
+# OpenVPN для OpenAI (опционально, альтернатива прокси)
+OVPN_CONFIG_PATH=/path/to/your/nl-free-221.protonvpn.udp.ovpn
 ```
+
+> 💡 **VPN/Прокси**: Если у вас есть ограничения доступа к OpenAI API, вы можете настроить прокси или OpenVPN только для запросов к OpenAI. Подробная инструкция в файле [VPN_SETUP.md](VPN_SETUP.md).
 
 ### 4. Получение токенов
 
@@ -132,7 +142,16 @@ python download_knowledge_base.py
 **Ручное скачивание:**
 Скачайте файл `embeddings.sqlite3` из репозитория [django-base-docker](https://github.com/367300/django-base-docker/tree/ml_service) и поместите его в папку `data/quiz_bot.db/`
 
-### 6. Запуск бота
+### 6. Тестирование подключения (опционально)
+Если вы настроили прокси, можете протестировать подключение:
+```bash
+python -c "
+from src.config import OPENAI_PROXY_URL
+print('🔒 Прокси настроен' if OPENAI_PROXY_URL else '🌐 Прокси не используется')
+"
+```
+
+### 7. Запуск бота
 ```bash
 python main.py
 ```
