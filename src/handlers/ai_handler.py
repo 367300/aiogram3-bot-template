@@ -7,7 +7,11 @@ from src.knowledge_base import get_relevant_contexts
 router = Router()
 
 # Инициализация клиента OpenAI
-client = OpenAI(api_key=OPENAI_API_KEY)
+client = OpenAI(
+    api_key=OPENAI_API_KEY,
+    base_url="https://openrouter.ai/api/v1"
+)
+
 print("🌐 OpenAI клиент инициализирован")
 
 @router.message(F.text)

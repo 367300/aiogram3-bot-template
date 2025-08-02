@@ -9,7 +9,7 @@ TELEGRAM_BOT_TOKEN = config('TELEGRAM_BOT_TOKEN', default=False)
 
 # OpenAI Configuration
 OPENAI_API_KEY = config('OPENAI_API_KEY', default=False)
-OPENAI_MODEL_NAME = "gpt-3.5-turbo"
+OPENAI_MODEL_NAME = "qwen/qwen3-coder:free"
 
 # GigaChat Configuration
 GIGACHAT_CREDENTIALS = config('GIGACHAT_CREDENTIALS', default=False)
