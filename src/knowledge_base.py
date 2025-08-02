@@ -7,7 +7,10 @@ from src.config import OPENAI_API_KEY, OPENAI_MODEL_NAME
 import os
 
 # Инициализация клиента OpenAI
-client = OpenAI(api_key=OPENAI_API_KEY)
+client = OpenAI(
+  base_url="https://openrouter.ai/api/v1",
+  api_key=OPENAI_API_KEY,
+)
 
 # Путь к существующей базе данных
 EMBEDDINGS_DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "quiz_bot.db", "embeddings.sqlite3")
