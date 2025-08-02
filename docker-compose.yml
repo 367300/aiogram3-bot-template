@@ -6,6 +6,7 @@ services:
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GIGACHAT_CREDENTIALS=${GIGACHAT_CREDENTIALS}
     volumes:
       - ./data:/app/data
     command: ["python", "main.py"]
