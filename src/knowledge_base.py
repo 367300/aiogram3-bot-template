@@ -2,32 +2,88 @@ import numpy as np
 import pandas as pd
 import aiosqlite
 import json
-from openai import OpenAI
-from src.config import OPENAI_API_KEY, OPENAI_MODEL_NAME
+import requests
+from gigachat import GigaChat
+from src.config import GIGACHAT_CREDENTIALS
 import os
 
-# Инициализация клиента OpenAI
-client = OpenAI(
-  base_url="https://openrouter.ai/api/v1",
-  api_key=OPENAI_API_KEY,
+# Глобальная переменная для хранения токена доступа GigaChat
+giga_access_token = None
+
+# URL для получения эмбеддингов GigaChat
+GIGACHAT_EMBEDDINGS_URL = "https://gigachat.devices.sberbank.ru/api/v1/embeddings"
+
+# Инициализация клиента GigaChat
+giga_client = GigaChat(
+    credentials=GIGACHAT_CREDENTIALS
 )
 
-# Путь к существующей базе данных
-EMBEDDINGS_DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "quiz_bot.db", "embeddings.sqlite3")
-
-def get_embedding(text):
-    """
-    Получает эмбеддинг для текста через OpenAI API
-    """
+# Получаем токен доступа при инициализации
+def get_gigachat_token():
+    """Получить токен доступа для GigaChat API."""
     try:
-        response = client.embeddings.create(
-            model="text-embedding-ada-002",
-            input=text
-        )
-        return response.data[0].embedding
+        response = giga_client.get_token()
+        return response.access_token
     except Exception as e:
-        print(f"Ошибка при получении эмбеддинга: {e}")
+        print(f'[red]Ошибка получения токена GigaChat: {e}[/red]')
         return None
+
+# Путь к существующей базе данных
+EMBEDDINGS_DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "quiz_bot.db", "embeddings_gigachat.sqlite3")
+
+def get_embedding(text: str) -> list:
+    """
+    Получает эмбеддинг для текста через GigaChat API с автоматическим обновлением токена
+    """
+    global giga_access_token
+    
+    if not giga_access_token:
+        print("❌ Токен доступа GigaChat не получен. Выполните инициализацию базы знаний.")
+        return None
+    
+    max_retries = 3  # Максимальное количество попыток обновления токена
+    
+    for attempt in range(max_retries):
+        try:
+            headers = {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': f'Bearer {giga_access_token}'
+            }
+            
+            data = {
+                "model": "EmbeddingsGigaR",
+                "input": [text]
+            }
+            
+            response = requests.post(GIGACHAT_EMBEDDINGS_URL, headers=headers, json=data)
+            response.raise_for_status()
+            
+            response_data = response.json()
+            return response_data['data'][0]['embedding']
+            
+        except requests.exceptions.HTTPError as e:
+            if response.status_code == 401:
+                print(f"🔄 Токен истек (попытка {attempt + 1}/{max_retries}). Получение нового токена...")
+                
+                # Получаем новый токен
+                new_token = get_gigachat_token()
+                if new_token:
+                    giga_access_token = new_token
+                    print("✅ Новый токен получен, повторяем запрос...")
+                    continue
+                else:
+                    print("❌ Не удалось получить новый токен")
+                    return None
+            else:
+                print(f"HTTP ошибка при получении эмбеддинга: {e}")
+                return None
+        except Exception as e:
+            print(f"Ошибка при получении эмбеддинга: {e}")
+            return None
+    
+    print(f"❌ Превышено максимальное количество попыток ({max_retries})")
+    return None
 
 async def load_embeddings_from_db():
     """
@@ -77,9 +133,20 @@ embeddings_data = []
 
 async def initialize_knowledge_base():
     """
-    Инициализирует базу знаний из существующей БД
+    Инициализирует базу знаний из существующей БД и получает токен доступа GigaChat
     """
-    global embeddings_data
+    global embeddings_data, giga_access_token
+    
+    # Получение токена доступа GigaChat
+    print("🔑 Получение токена доступа GigaChat...")
+    giga_access_token = get_gigachat_token()
+    if not giga_access_token:
+        print("❌ Не удалось получить токен доступа GigaChat")
+        return
+    
+    print("✅ Токен доступа GigaChat получен")
+    
+    # Загрузка базы знаний
     print("📚 Загрузка базы знаний из embeddings.sqlite3...")
     embeddings_data = await load_embeddings_from_db()
     print(f"✅ База знаний инициализирована. Записей: {len(embeddings_data)}")

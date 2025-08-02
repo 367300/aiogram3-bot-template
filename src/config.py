@@ -11,6 +11,9 @@ TELEGRAM_BOT_TOKEN = config('TELEGRAM_BOT_TOKEN', default=False)
 OPENAI_API_KEY = config('OPENAI_API_KEY', default=False)
 OPENAI_MODEL_NAME = "gpt-3.5-turbo"
 
+# GigaChat Configuration
+GIGACHAT_CREDENTIALS = config('GIGACHAT_CREDENTIALS', default=False)
+
 # OpenAI Proxy Configuration (опционально)
 PROXY_URL = config('PROXY_URL', default=False)
 PROXY_USERNAME = config('PROXY_USERNAME', default=False)
@@ -24,6 +27,8 @@ if not TELEGRAM_BOT_TOKEN:
     print("Ошибка: Токен Telegram бота не установлен в переменных окружения.")
 if not OPENAI_API_KEY:
     print("Ошибка: Ключ OpenAI API не установлен в переменных окружения.")
+if not GIGACHAT_CREDENTIALS:
+    print("Ошибка: Ключ авторизации GigaChat не установлен в переменных окружения.")
 
 # Информация о прокси и VPN
 if PROXY_URL:
