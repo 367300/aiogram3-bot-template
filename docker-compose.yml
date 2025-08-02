@@ -9,4 +9,4 @@ services:
       - GIGACHAT_CREDENTIALS=${GIGACHAT_CREDENTIALS}
     volumes:
       - ./data:/app/data
-    command: ["python", "main.py"]
+    command: ["./init_certificates.sh"]
