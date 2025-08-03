@@ -2,7 +2,7 @@ services:
   aiogram-bot:
     build: .
     container_name: aiogram-bot
-    restart: always
+    # restart: always
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
