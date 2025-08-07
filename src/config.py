@@ -9,7 +9,7 @@ TELEGRAM_BOT_TOKEN = config('TELEGRAM_BOT_TOKEN', default=False)
 
 # OpenAI Configuration
 OPENAI_API_KEY = config('OPENAI_API_KEY', default=False)
-OPENAI_MODEL_NAME = "qwen/qwen3-coder:free"
+OPENAI_MODEL_NAME = config('OPENAI_MODEL_NAME', default=False)
 
 # GigaChat Configuration
 GIGACHAT_CREDENTIALS = config('GIGACHAT_CREDENTIALS', default=False)
@@ -21,3 +21,5 @@ if not OPENAI_API_KEY:
     print("Ошибка: Ключ OpenAI API не установлен в переменных окружения.")
 if not GIGACHAT_CREDENTIALS:
     print("Ошибка: Ключ авторизации GigaChat не установлен в переменных окружения.")
+if not OPENAI_MODEL_NAME:
+    print("Ошибка: Модель OpenAI не установлена в переменных окружения.")
