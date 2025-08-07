@@ -6,6 +6,7 @@ services:
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME}
       - GIGACHAT_CREDENTIALS=${GIGACHAT_CREDENTIALS}
     volumes:
       - ./data:/app/data
